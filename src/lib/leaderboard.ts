@@ -58,19 +58,19 @@ export async function getPeopleLeaderboard(userId: string, range: DateRange): Pr
   })
 
   return people
-    .map((person) => {
+    .flatMap((person): LeaderboardRow[] => {
       const bios = person.meetings
         .filter((mp) => !since || mp.meeting.startTime >= since)
         .map((mp) => mp.meeting.biometrics)
         .filter((b): b is NonNullable<typeof b> => b != null)
 
-      if (bios.length === 0) return null
+      if (bios.length === 0) return []
 
       const elevations = bios.map((b) => b.hrElevation ?? 0)
       const stresses = bios.map((b) => b.avgStress ?? 0)
       const bbDeltas = bios.map((b) => b.bodyBatteryDelta ?? 0)
 
-      return {
+      return [{
         id: person.id,
         name: person.name ?? person.email,
         avgHrElevation: elevations.reduce((a, b) => a + b, 0) / elevations.length,
@@ -78,9 +78,8 @@ export async function getPeopleLeaderboard(userId: string, range: DateRange): Pr
         avgBbDelta: bbDeltas.reduce((a, b) => a + b, 0) / bbDeltas.length,
         meetingCount: bios.length,
         sparkline: elevations.slice(0, 10),
-      }
+      }]
     })
-    .filter((r): r is LeaderboardRow => r != null)
     .sort((a, b) => (b.avgHrElevation ?? 0) - (a.avgHrElevation ?? 0))
 }
 
@@ -100,19 +99,19 @@ export async function getTopicsLeaderboard(userId: string, range: DateRange): Pr
   })
 
   return topics
-    .map((topic) => {
+    .flatMap((topic): LeaderboardRow[] => {
       const bios = topic.meetings
         .filter((mt) => !since || mt.meeting.startTime >= since)
         .map((mt) => mt.meeting.biometrics)
         .filter((b): b is NonNullable<typeof b> => b != null)
 
-      if (bios.length === 0) return null
+      if (bios.length === 0) return []
 
       const elevations = bios.map((b) => b.hrElevation ?? 0)
       const stresses = bios.map((b) => b.avgStress ?? 0)
       const bbDeltas = bios.map((b) => b.bodyBatteryDelta ?? 0)
 
-      return {
+      return [{
         id: topic.id,
         name: topic.name,
         avgHrElevation: elevations.reduce((a, b) => a + b, 0) / elevations.length,
@@ -120,9 +119,8 @@ export async function getTopicsLeaderboard(userId: string, range: DateRange): Pr
         avgBbDelta: bbDeltas.reduce((a, b) => a + b, 0) / bbDeltas.length,
         meetingCount: bios.length,
         sparkline: elevations.slice(0, 10),
-      }
+      }]
     })
-    .filter((r): r is LeaderboardRow => r != null)
     .sort((a, b) => (b.avgHrElevation ?? 0) - (a.avgHrElevation ?? 0))
 }
 
