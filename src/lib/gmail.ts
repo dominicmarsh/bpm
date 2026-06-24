@@ -14,9 +14,9 @@ function stripHtml(html: string): string {
     .trim()
 }
 
-function extractBody(payload: NonNullable<ReturnType<typeof google.gmail>>['users']['messages'] extends { get: infer G } ? Awaited<ReturnType<G extends (...args: unknown[]) => infer R ? R : never>>['data']['payload'] : never): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const p = payload as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractBody(payload: any): string {
+  const p = payload
   if (!p) return ''
 
   const parts: string[] = []
