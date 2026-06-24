@@ -51,7 +51,6 @@ export async function getPeopleLeaderboard(userId: string, range: DateRange): Pr
         include: {
           meeting: {
             include: { biometrics: true },
-            where: since ? { startTime: { gte: since } } : {},
           },
         },
       },
@@ -61,6 +60,7 @@ export async function getPeopleLeaderboard(userId: string, range: DateRange): Pr
   return people
     .map((person) => {
       const bios = person.meetings
+        .filter((mp) => !since || mp.meeting.startTime >= since)
         .map((mp) => mp.meeting.biometrics)
         .filter((b): b is NonNullable<typeof b> => b != null)
 
@@ -93,7 +93,6 @@ export async function getTopicsLeaderboard(userId: string, range: DateRange): Pr
         include: {
           meeting: {
             include: { biometrics: true },
-            where: since ? { startTime: { gte: since } } : {},
           },
         },
       },
@@ -103,6 +102,7 @@ export async function getTopicsLeaderboard(userId: string, range: DateRange): Pr
   return topics
     .map((topic) => {
       const bios = topic.meetings
+        .filter((mt) => !since || mt.meeting.startTime >= since)
         .map((mt) => mt.meeting.biometrics)
         .filter((b): b is NonNullable<typeof b> => b != null)
 
