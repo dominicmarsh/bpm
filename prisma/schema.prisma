@@ -64,6 +64,7 @@ model GarminCredential {
   encryptedUsername String
   encryptedPassword String
   iv                String
+  syncDays          Int       @default(90)
   lastSyncAt        DateTime?
   user              User      @relation(fields: [userId], references: [id])
 }

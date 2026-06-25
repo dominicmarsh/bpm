@@ -7,13 +7,13 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { username, password } = await req.json()
+  const { username, password, syncDays } = await req.json()
   if (!username || !password) return NextResponse.json({ error: 'Missing credentials' }, { status: 400 })
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  await saveGarminCredentials(user.id, username, password)
+  await saveGarminCredentials(user.id, username, password, syncDays ?? 90)
   return NextResponse.json({ ok: true })
 }
 

@@ -32,14 +32,13 @@ function decrypt(encryptedB64: string, ivHex: string): string {
   return decipher.update(encrypted) + decipher.final('utf8')
 }
 
-export async function saveGarminCredentials(userId: string, username: string, password: string) {
+export async function saveGarminCredentials(userId: string, username: string, password: string, syncDays = 90) {
   const { encrypted: encryptedUsername, iv: ivU } = encrypt(username)
   const { encrypted: encryptedPassword } = encrypt(password)
-  // share the same IV for both fields in this record
   await prisma.garminCredential.upsert({
     where: { userId },
-    create: { userId, encryptedUsername, encryptedPassword, iv: ivU },
-    update: { encryptedUsername, encryptedPassword, iv: ivU },
+    create: { userId, encryptedUsername, encryptedPassword, iv: ivU, syncDays },
+    update: { encryptedUsername, encryptedPassword, iv: ivU, syncDays },
   })
 }
 
@@ -120,7 +119,8 @@ export async function pullGarminData(userId: string, scope: 'full' | 'incrementa
   const creds = await getGarminCredentials(userId)
   if (!creds) throw new Error('No Garmin credentials found')
 
-  const days = scope === 'full' ? 90 : 2
+  const storedDays = creds ? await prisma.garminCredential.findUnique({ where: { userId }, select: { syncDays: true } }).then(r => r?.syncDays ?? 90) : 90
+  const days = scope === 'full' ? storedDays : 2
 
   let readings: GarminReading[] = []
   try {
