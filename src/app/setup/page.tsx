@@ -36,11 +36,12 @@ export default function SetupPage() {
       return
     }
 
-    // Trigger sync fire-and-forget then redirect immediately
+    // Trigger sync; keepalive tells the browser not to cancel on navigation
     fetch('/api/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scope: syncDays === 0 ? 'incremental' : 'full' }),
+      keepalive: true,
     }).catch(() => {})
 
     router.push('/?syncing=true')
