@@ -4,5 +4,10 @@
       "path": "/api/cron/daily-sync",
       "schedule": "0 9 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/sync/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

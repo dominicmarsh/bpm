@@ -29,17 +29,16 @@ export async function getMeetingsLeaderboard(userId: string, range: DateRange): 
   })
 
   return meetings
-    .filter((m) => m.biometrics)
     .map((m) => ({
       id: m.id,
       name: m.title,
-      avgHrElevation: m.biometrics!.hrElevation,
-      avgStress: m.biometrics!.avgStress,
-      avgBbDelta: m.biometrics!.bodyBatteryDelta,
+      avgHrElevation: m.biometrics?.hrElevation ?? null,
+      avgStress: m.biometrics?.avgStress ?? null,
+      avgBbDelta: m.biometrics?.bodyBatteryDelta ?? null,
       meetingCount: 1,
-      sparkline: [m.biometrics!.hrElevation ?? 0],
+      sparkline: m.biometrics ? [m.biometrics.hrElevation ?? 0] : [],
     }))
-    .sort((a, b) => (b.avgHrElevation ?? 0) - (a.avgHrElevation ?? 0))
+    .sort((a, b) => (b.avgHrElevation ?? -999) - (a.avgHrElevation ?? -999))
 }
 
 export async function getPeopleLeaderboard(userId: string, range: DateRange): Promise<LeaderboardRow[]> {
