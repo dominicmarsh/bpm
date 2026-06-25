@@ -12,7 +12,7 @@ const links = [
 export function Nav() {
   const path = usePathname()
   return (
-    <nav className="border-b border-border bg-bg/80 backdrop-blur sticky top-0 z-10">
+    <nav className="sticky top-0 z-10 backdrop-blur" style={{ borderBottom: '1px solid #1e1e1e', background: 'rgba(0,0,0,0.85)' }}>
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/logo.png" alt="BPM" width={24} height={24} className="opacity-70" />

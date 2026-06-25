@@ -6,10 +6,10 @@ const config: Config = {
     extend: {
       colors: {
         bg: '#000000',
-        card: '#0f0f0f',
-        border: '#1c1c1c',
+        card: '#111111',
+        border: '#242424',
         'text-primary': '#f0f0f0',
-        'text-secondary': '#555555',
+        'text-secondary': '#888888',
         accent: '#e53e3e',
         stress: '#f59e0b',
         positive: '#22c55e',

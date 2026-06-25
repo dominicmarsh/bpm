@@ -7,12 +7,6 @@ import type { LeaderboardRow } from '@/lib/leaderboard'
 type SortKey = 'avgHrElevation' | 'avgStress' | 'avgBbDelta' | 'meetingCount'
 type View = 'meetings' | 'people' | 'topics' | 'teams'
 
-function fmt(v: number | null, decimals = 1, suffix = ''): string {
-  if (v == null) return '—'
-  const sign = suffix && v > 0 ? '+' : ''
-  return `${sign}${v.toFixed(decimals)}${suffix}`
-}
-
 interface Props {
   rows: LeaderboardRow[]
   view: View
@@ -48,34 +42,35 @@ export function LeaderboardTable({ rows, view }: Props) {
   const ColHeader = ({ k, label }: { k: SortKey; label: string }) => (
     <th
       onClick={() => toggleSort(k)}
-      className="text-right text-xs text-text-secondary uppercase tracking-widest font-medium px-6 py-4 cursor-pointer hover:text-text-primary transition-colors select-none"
+      className="text-right text-[11px] text-text-secondary uppercase tracking-widest font-medium px-6 py-3.5 cursor-pointer hover:text-text-primary transition-colors select-none"
     >
       {label}{sortKey === k ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
     </th>
   )
 
   return (
-    <div className="rounded-xl overflow-hidden border border-border">
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #2a2a2a' }}>
       <table className="w-full">
+        {/* Header */}
         <thead>
-          <tr className="border-b border-border">
-            <th className="text-left text-xs text-text-secondary uppercase tracking-widest font-medium pl-6 pr-2 py-4 w-10">#</th>
-            <th className="text-left text-xs text-text-secondary uppercase tracking-widest font-medium px-4 py-4">Name</th>
+          <tr style={{ background: '#161616', borderBottom: '1px solid #2a2a2a' }}>
+            <th className="text-left text-[11px] text-text-secondary uppercase tracking-widest font-medium pl-5 pr-2 py-3.5 w-12">#</th>
+            <th className="text-left text-[11px] text-text-secondary uppercase tracking-widest font-medium px-4 py-3.5">Name</th>
             <ColHeader k="avgHrElevation" label="HR ↑" />
             <ColHeader k="meetingCount" label="Count" />
             {showExtra && <ColHeader k="avgStress" label="Stress" />}
             {showExtra && <ColHeader k="avgBbDelta" label="Battery" />}
-            <th className="px-4 py-4 text-right">
+            <th className="px-4 py-3.5 text-right">
               <button
                 onClick={() => setShowExtra((v) => !v)}
-                className="text-xs text-text-secondary hover:text-text-primary transition-colors"
-                title={showExtra ? 'Hide extra columns' : 'Show stress & battery'}
+                className="text-[11px] text-text-secondary hover:text-text-primary transition-colors"
               >
                 {showExtra ? '← less' : 'more →'}
               </button>
             </th>
           </tr>
         </thead>
+
         <tbody>
           {sorted.map((row, i) => {
             const elevation = row.avgHrElevation
@@ -87,14 +82,24 @@ export function LeaderboardTable({ rows, view }: Props) {
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row)}
-                className="border-b border-border/40 hover:bg-white/[0.03] cursor-pointer transition-colors group"
+                className="cursor-pointer group transition-colors"
+                style={{ borderBottom: '1px solid #1e1e1e' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#161616')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
-                <td className="pl-6 pr-2 py-4 text-text-secondary tabular-nums text-sm">{i + 1}</td>
+                {/* Rank */}
+                <td className="pl-5 pr-2 py-4 tabular-nums text-sm" style={{ color: '#444' }}>
+                  {i + 1}
+                </td>
+
+                {/* Name */}
                 <td className="px-4 py-4">
-                  <span className="text-text-primary font-medium text-sm group-hover:text-white transition-colors">
+                  <span className="text-text-primary font-medium text-sm leading-snug">
                     {row.name}
                   </span>
                 </td>
+
+                {/* HR Elevation */}
                 <td className="px-6 py-4 text-right tabular-nums">
                   {hasData ? (
                     <span className={`text-sm font-semibold ${high ? 'text-red-400' : mid ? 'text-amber-400' : 'text-green-400'}`}>
@@ -102,30 +107,35 @@ export function LeaderboardTable({ rows, view }: Props) {
                       <span className="text-text-secondary font-normal text-xs ml-1">bpm</span>
                     </span>
                   ) : (
-                    <span className="text-text-secondary text-sm">—</span>
+                    <span style={{ color: '#333' }} className="text-sm">—</span>
                   )}
                 </td>
+
+                {/* Count */}
                 <td className="px-6 py-4 text-right tabular-nums text-text-secondary text-sm">
                   {row.meetingCount}
                 </td>
+
                 {showExtra && (
                   <td className="px-6 py-4 text-right tabular-nums text-sm text-text-primary">
-                    {fmt(row.avgStress, 0)}
+                    {row.avgStress != null ? row.avgStress.toFixed(0) : '—'}
                   </td>
                 )}
                 {showExtra && (
                   <td className={`px-6 py-4 text-right tabular-nums text-sm ${(row.avgBbDelta ?? 0) < -5 ? 'text-amber-400' : 'text-green-400'}`}>
-                    {fmt(row.avgBbDelta, 0, '')}
+                    {row.avgBbDelta != null ? (row.avgBbDelta > 0 ? '+' : '') + row.avgBbDelta.toFixed(0) : '—'}
                   </td>
                 )}
+
                 <td className="px-4 py-4" />
               </tr>
             )
           })}
+
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-6 py-16 text-center text-text-secondary text-sm">
-                No data yet — hit Sync now to pull your calendar
+              <td colSpan={6} className="px-6 py-16 text-center text-sm" style={{ color: '#444' }}>
+                No data yet — hit Sync now
               </td>
             </tr>
           )}
