@@ -28,16 +28,38 @@ export async function getMeetingsLeaderboard(userId: string, range: DateRange): 
     orderBy: { startTime: 'desc' },
   })
 
-  return meetings
-    .map((m) => ({
-      id: m.id,
-      name: m.title,
-      avgHrElevation: m.biometrics?.hrElevation ?? null,
-      avgStress: m.biometrics?.avgStress ?? null,
-      avgBbDelta: m.biometrics?.bodyBatteryDelta ?? null,
-      meetingCount: 1,
-      sparkline: m.biometrics ? [m.biometrics.hrElevation ?? 0] : [],
-    }))
+  // Group by normalised title (lowercase, strip trailing dates/numbers like "- 2026-06-25")
+  const normalise = (t: string) =>
+    t.toLowerCase()
+      .replace(/\s*[-–]\s*\d{4}[-/]\d{1,2}[-/]\d{1,2}$/, '')
+      .replace(/\s*#\d+$/, '')
+      .trim()
+
+  const groups = new Map<string, typeof meetings>()
+  for (const m of meetings) {
+    const key = normalise(m.title)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(m)
+  }
+
+  return Array.from(groups.values())
+    .map((group) => {
+      const bios = group.map((m) => m.biometrics).filter((b): b is NonNullable<typeof b> => b != null)
+      const elevations = bios.map((b) => b.hrElevation ?? 0)
+      const stresses = bios.map((b) => b.avgStress ?? 0)
+      const bbDeltas = bios.map((b) => b.bodyBatteryDelta ?? 0)
+      const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+      return {
+        id: group[0].id,
+        name: group[0].title, // representative title (most recent)
+        avgHrElevation: avg(elevations),
+        avgStress: avg(stresses),
+        avgBbDelta: avg(bbDeltas),
+        meetingCount: group.length,
+        sparkline: elevations.slice(0, 10),
+      }
+    })
     .sort((a, b) => (b.avgHrElevation ?? -999) - (a.avgHrElevation ?? -999))
 }
 
