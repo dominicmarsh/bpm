@@ -22,8 +22,9 @@ export interface LeaderboardRow {
 
 export async function getMeetingsLeaderboard(userId: string, range: DateRange): Promise<LeaderboardRow[]> {
   const since = sinceDate(range)
+  const now = new Date()
   const meetings = await prisma.meetingSession.findMany({
-    where: { userId, ...(since ? { startTime: { gte: since } } : {}) },
+    where: { userId, startTime: { ...(since ? { gte: since } : {}), lte: now } },
     include: { biometrics: true },
     orderBy: { startTime: 'desc' },
   })

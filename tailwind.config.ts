@@ -5,14 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#0f172a',
-        card: '#1e293b',
-        border: '#334155',
-        'text-primary': '#e2e8f0',
-        'text-secondary': '#94a3b8',
-        accent: '#3b82f6',
+        bg: '#000000',
+        card: '#0f0f0f',
+        border: '#1c1c1c',
+        'text-primary': '#f0f0f0',
+        'text-secondary': '#555555',
+        accent: '#e53e3e',
         stress: '#f59e0b',
-        positive: '#10b981',
+        positive: '#22c55e',
       },
     },
   },

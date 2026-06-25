@@ -17,6 +17,7 @@ export async function pullCalendarEvents(userId: string, accessToken: string, sc
     const res = await calendar.events.list({
       calendarId: 'primary',
       timeMin: timeMin.toISOString(),
+      timeMax: new Date().toISOString(), // no future events
       singleEvents: true,
       orderBy: 'startTime',
       maxResults: 250,

@@ -25,30 +25,22 @@ interface Props {
 export function LeaderboardClient({ initialView, initialRange, meetings, people, topics, teams }: Props) {
   const router = useRouter()
 
-  function setView(v: View) {
-    router.push(`/?view=${v}&range=${initialRange}`)
-  }
-
-  function setRange(r: DateRange) {
-    router.push(`/?view=${initialView}&range=${r}`)
-  }
+  function setView(v: View) { router.push(`/?view=${v}&range=${initialRange}`) }
+  function setRange(r: DateRange) { router.push(`/?view=${initialView}&range=${r}`) }
 
   const data = { meetings, people, topics, teams }
-  const rows = data[initialView]
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-text-primary">Leaderboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Leaderboard</h1>
         <div className="flex items-center gap-3">
-          {/* Range selector */}
           <div className="flex bg-card border border-border rounded-lg p-0.5 gap-0.5">
             {RANGES.map(({ label, value }) => (
               <button
                 key={value}
                 onClick={() => setRange(value)}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                   initialRange === value
                     ? 'bg-accent text-white'
                     : 'text-text-secondary hover:text-text-primary'
@@ -62,13 +54,12 @@ export function LeaderboardClient({ initialView, initialRange, meetings, people,
         </div>
       </div>
 
-      {/* View tabs */}
-      <div className="flex border-b border-border gap-6">
+      <div className="flex border-b border-border gap-8">
         {VIEWS.map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`pb-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+            className={`pb-3 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
               initialView === v
                 ? 'border-accent text-text-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -79,7 +70,7 @@ export function LeaderboardClient({ initialView, initialRange, meetings, people,
         ))}
       </div>
 
-      <LeaderboardTable rows={rows} view={initialView} />
+      <LeaderboardTable rows={data[initialView]} view={initialView} />
     </div>
   )
 }
