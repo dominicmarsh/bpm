@@ -59,90 +59,48 @@ export interface GarminReading {
   hrv?: number
 }
 
+// Syncs one day and saves immediately so partial data survives a timeout
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function tryGarminConnect(username: string, password: string, days: number): Promise<GarminReading[]> {
-  // Dynamic import — garmin-connect may not exist in all envs
-  const { GarminConnect } = await import('garmin-connect')
-  const client = new GarminConnect({ username, password })
-  await client.login(username, password)
-
+async function syncDay(client: any, userId: string, date: Date): Promise<number> {
+  const dateStr = date.toISOString().split('T')[0]
   const readings: GarminReading[] = []
-  const now = new Date()
 
-  for (let i = 0; i < days; i++) {
-    const date = new Date(now)
-    date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
-
-    try {
-      // Heart rate (1-min intervals)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hrData = await (client as any).getHeartRate(date)
-      if (hrData?.heartRateValues) {
-        for (const [ts, hr] of hrData.heartRateValues) {
-          if (hr != null) {
-            readings.push({ timestamp: new Date(ts), heartRate: hr })
-          }
-        }
-      }
-
-      // Stress
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stressData = await (client as any).getStressData(dateStr)
-      if (stressData?.stressValuesArray) {
-        for (const [ts, stress] of stressData.stressValuesArray) {
-          if (stress != null && stress >= 0) {
-            readings.push({ timestamp: new Date(ts), stressScore: stress })
-          }
-        }
-      }
-
-      // Body Battery
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const bbData = await (client as any).getBodyBattery(dateStr)
-      if (bbData?.[0]?.bodyBatteryValuesArray) {
-        for (const [ts, bb] of bbData[0].bodyBatteryValuesArray) {
-          if (bb != null) {
-            readings.push({ timestamp: new Date(ts), bodyBattery: bb })
-          }
-        }
-      }
-    } catch {
-      // Skip individual day errors — partial data is fine
-    }
-  }
-
-  return readings
-}
-
-export async function pullGarminData(userId: string, scope: 'full' | 'incremental'): Promise<number> {
-  const creds = await getGarminCredentials(userId)
-  if (!creds) throw new Error('No Garmin credentials found')
-
-  const storedDays = creds ? await prisma.garminCredential.findUnique({ where: { userId }, select: { syncDays: true } }).then(r => r?.syncDays ?? 90) : 90
-  const days = scope === 'full' ? storedDays : 2
-
-  let readings: GarminReading[] = []
   try {
-    readings = await tryGarminConnect(creds.username, creds.password, days)
-  } catch (err) {
-    throw new Error(
-      `Garmin sync failed: ${err instanceof Error ? err.message : String(err)}. ` +
-        'See GARMIN_SETUP.md for the Python fallback option.'
-    )
-  }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hrData = await (client as any).getHeartRate(date)
+    if (hrData?.heartRateValues) {
+      for (const [ts, hr] of hrData.heartRateValues) {
+        if (hr != null) readings.push({ timestamp: new Date(ts), heartRate: hr })
+      }
+    }
+  } catch { /* skip */ }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stressData = await (client as any).getStressData(dateStr)
+    if (stressData?.stressValuesArray) {
+      for (const [ts, stress] of stressData.stressValuesArray) {
+        if (stress != null && stress >= 0) readings.push({ timestamp: new Date(ts), stressScore: stress })
+      }
+    }
+  } catch { /* skip */ }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bbData = await (client as any).getBodyBattery(dateStr)
+    if (bbData?.[0]?.bodyBatteryValuesArray) {
+      for (const [ts, bb] of bbData[0].bodyBatteryValuesArray) {
+        if (bb != null) readings.push({ timestamp: new Date(ts), bodyBattery: bb })
+      }
+    }
+  } catch { /* skip */ }
 
   if (readings.length === 0) return 0
 
-  // Batch upsert — Prisma doesn't support upsert on composite keys without unique,
-  // so we delete+insert per userId+timestamp window
-  const minTs = readings.reduce((a, b) => (a.timestamp < b.timestamp ? a : b)).timestamp
-  const maxTs = readings.reduce((a, b) => (a.timestamp > b.timestamp ? a : b)).timestamp
-
-  await prisma.biometricReading.deleteMany({
-    where: { userId, timestamp: { gte: minTs, lte: maxTs } },
-  })
-
+  // Save immediately — don't accumulate
+  const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
+  await prisma.biometricReading.deleteMany({ where: { userId, timestamp: { gte: dayStart, lte: dayEnd } } })
   await prisma.biometricReading.createMany({
     data: readings.map((r) => ({
       userId,
@@ -153,11 +111,32 @@ export async function pullGarminData(userId: string, scope: 'full' | 'incrementa
       hrv: r.hrv ?? null,
     })),
   })
-
-  await prisma.garminCredential.update({
-    where: { userId },
-    data: { lastSyncAt: new Date() },
-  })
-
   return readings.length
+}
+
+export async function pullGarminData(userId: string, scope: 'full' | 'incremental'): Promise<number> {
+  const creds = await getGarminCredentials(userId)
+  if (!creds) throw new Error('No Garmin credentials found')
+
+  const storedDays = await prisma.garminCredential
+    .findUnique({ where: { userId }, select: { syncDays: true } })
+    .then(r => r?.syncDays ?? 90)
+  const days = scope === 'full' ? storedDays : 2
+
+  const { GarminConnect } = await import('garmin-connect')
+  const client = new GarminConnect({ username: creds.username, password: creds.password })
+  await client.login(creds.username, creds.password)
+
+  const now = new Date()
+  let total = 0
+  for (let i = 0; i < days; i++) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    total += await syncDay(client, userId, date)
+  }
+
+  if (total > 0) {
+    await prisma.garminCredential.update({ where: { userId }, data: { lastSyncAt: new Date() } })
+  }
+  return total
 }

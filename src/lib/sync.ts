@@ -44,21 +44,19 @@ export async function runSync(
 
       job.step = 'garmin'
       job.progress = 10
-      await pullGarminData(userId, scope).catch(() => {
-        // Garmin failure is non-blocking — continue with calendar/gmail
-      })
+      await pullGarminData(userId, scope).catch(() => {})
 
       job.step = 'calendar'
       job.progress = 35
-      await pullCalendarEvents(userId, accessToken, scope)
+      await pullCalendarEvents(userId, accessToken, scope).catch(() => {})
 
       job.step = 'gmail'
       job.progress = 55
-      await pullGeminiNotes(userId, accessToken)
+      await pullGeminiNotes(userId, accessToken).catch(() => {})
 
       job.step = 'enrichment'
       job.progress = 75
-      await runEnrichment(userId)
+      await runEnrichment(userId).catch(() => {})
 
       job.step = 'done'
       job.progress = 100
