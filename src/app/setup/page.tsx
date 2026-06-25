@@ -63,10 +63,7 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="bg-card border border-border rounded-xl p-10 w-full max-w-md">
-        <h1 className="text-xl font-bold text-text-primary mb-1">Connect Garmin</h1>
-        <p className="text-text-secondary text-sm mb-8">
-          Your credentials are encrypted at rest using AES-256-GCM.
-        </p>
+        <h1 className="text-xl font-bold text-text-primary mb-6">Connect Garmin</h1>
 
         {state === 'syncing' ? (
           <div className="space-y-4">
@@ -86,26 +83,35 @@ export default function SetupPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-text-secondary mb-1">Garmin username</label>
+              <label className="block text-sm text-text-secondary mb-1">Email</label>
               <input
-                type="text"
+                type="email"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => { setUsername(e.target.value); if (state === 'error') setState('idle') }}
+                placeholder="you@example.com"
                 className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-accent"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-text-secondary mb-1">Garmin password</label>
+              <label className="block text-sm text-text-secondary mb-1">Password</label>
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (state === 'error') setState('idle') }}
                 className="w-full bg-bg border border-border rounded-lg px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-accent"
                 required
               />
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {state === 'error' && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2.5 text-sm text-red-400">
+                {error || 'Login failed'} — check your credentials at{' '}
+                <a href="https://connect.garmin.com" target="_blank" rel="noreferrer" className="underline">
+                  connect.garmin.com
+                </a>
+                . Garmin may also require email verification for new sign-ins.
+              </div>
+            )}
             <button
               type="submit"
               disabled={state === 'saving'}
@@ -113,12 +119,14 @@ export default function SetupPage() {
             >
               {state === 'saving' ? 'Saving…' : 'Save & start sync'}
             </button>
+            <p className="text-text-secondary text-xs text-center">
+              Use the same credentials as{' '}
+              <a href="https://connect.garmin.com" target="_blank" rel="noreferrer" className="text-accent hover:underline">
+                connect.garmin.com
+              </a>
+            </p>
           </form>
         )}
-
-        <p className="text-text-secondary text-xs mt-6">
-          See <code className="text-accent">GARMIN_SETUP.md</code> if the npm sync fails — a Python fallback is available.
-        </p>
       </div>
     </div>
   )
