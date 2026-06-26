@@ -102,11 +102,6 @@ export default async function MeetingPage({ params }: { params: { id: string } }
             value={bio?.peakStress ?? null}
             highlight={bio?.peakStress != null && bio.peakStress > 60 ? 'stress' : 'neutral'}
           />
-          <StatCard
-            label="Battery Drain"
-            value={bio?.bodyBatteryDelta != null ? (bio.bodyBatteryDelta > 0 ? `+${bio.bodyBatteryDelta}` : String(bio.bodyBatteryDelta)) : null}
-            highlight={bio?.bodyBatteryDelta != null && bio.bodyBatteryDelta < -5 ? 'stress' : 'positive'}
-          />
           <StatCard label="Duration" value={duration(meeting.startTime, meeting.endTime)} />
         </div>
 
@@ -125,7 +120,7 @@ export default async function MeetingPage({ params }: { params: { id: string } }
         </div>
 
         {/* Secondary charts */}
-        <MeetingSecondaryCharts data={chartData} bio={bio} />
+        <MeetingSecondaryCharts data={chartData} />
 
         {/* Meeting Intelligence */}
         {meeting.transcriptRaw && (
