@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LeaderboardRow } from '@/lib/leaderboard'
 
+async function excludeMeeting(id: string) {
+  await fetch(`/api/meetings/${id}/exclude`, { method: 'POST' })
+  window.location.reload()
+}
+
 type SortKey = 'avgHrElevation' | 'avgStress' | 'avgBbDelta' | 'meetingCount'
 type View = 'meetings' | 'people' | 'topics' | 'teams'
 
@@ -17,6 +22,8 @@ export function LeaderboardTable({ rows, view }: Props) {
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const [showExtra, setShowExtra] = useState(false)
   const router = useRouter()
+
+  const hasAnyBiometrics = rows.some((r) => r.avgHrElevation != null)
 
   const sorted = [...rows].sort((a, b) => {
     const av = a[sortKey] ?? (sortDir === 'desc' ? -Infinity : Infinity)
@@ -49,6 +56,13 @@ export function LeaderboardTable({ rows, view }: Props) {
   )
 
   return (
+    <div className="space-y-3">
+    {!hasAnyBiometrics && rows.length > 0 && (
+      <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs" style={{ background: '#111', border: '1px solid #2a2a2a', color: '#888' }}>
+        <span style={{ color: '#e53e3e' }}>●</span>
+        Biometric data not yet synced — HR elevation, stress and battery will appear after a successful Garmin sync.
+      </div>
+    )}
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #2a2a2a' }}>
       <table className="w-full">
         {/* Header */}
@@ -88,7 +102,7 @@ export function LeaderboardTable({ rows, view }: Props) {
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 {/* Rank */}
-                <td className="pl-5 pr-2 py-4 tabular-nums text-sm" style={{ color: '#444' }}>
+                <td className="pl-5 pr-2 py-4 tabular-nums text-sm font-medium" style={{ color: i < 3 ? ['#c9a227', '#9e9e9e', '#c07a3e'][i] : '#555' }}>
                   {i + 1}
                 </td>
 
@@ -112,7 +126,7 @@ export function LeaderboardTable({ rows, view }: Props) {
                 </td>
 
                 {/* Count */}
-                <td className="px-6 py-4 text-right tabular-nums text-text-secondary text-sm">
+                <td className="px-6 py-4 text-right tabular-nums text-text-primary text-sm font-medium">
                   {row.meetingCount}
                 </td>
 
@@ -122,12 +136,21 @@ export function LeaderboardTable({ rows, view }: Props) {
                   </td>
                 )}
                 {showExtra && (
-                  <td className={`px-6 py-4 text-right tabular-nums text-sm ${(row.avgBbDelta ?? 0) < -5 ? 'text-amber-400' : 'text-green-400'}`}>
-                    {row.avgBbDelta != null ? (row.avgBbDelta > 0 ? '+' : '') + row.avgBbDelta.toFixed(0) : '—'}
+                  <td className={`px-6 py-4 text-right tabular-nums text-sm ${row.avgBbDelta == null ? '' : row.avgBbDelta < -5 ? 'text-amber-400' : 'text-green-400'}`}>
+                    {row.avgBbDelta != null ? (row.avgBbDelta > 0 ? '+' : '') + row.avgBbDelta.toFixed(0) : <span style={{ color: '#333' }}>—</span>}
                   </td>
                 )}
 
-                <td className="px-4 py-4" />
+                <td className="px-4 py-4 text-right">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); excludeMeeting(row.id) }}
+                    title="Hide from leaderboard"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1.5 py-0.5 rounded"
+                    style={{ color: '#555', background: '#1e1e1e' }}
+                  >
+                    hide
+                  </button>
+                </td>
               </tr>
             )
           })}
@@ -141,6 +164,7 @@ export function LeaderboardTable({ rows, view }: Props) {
           )}
         </tbody>
       </table>
+    </div>
     </div>
   )
 }

@@ -59,6 +59,8 @@ export interface GarminReading {
   hrv?: number
 }
 
+const GC_API = 'https://connectapi.garmin.com'
+
 // Syncs one day and saves immediately so partial data survives a timeout
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function syncDay(client: any, userId: string, date: Date): Promise<number> {
@@ -66,8 +68,7 @@ async function syncDay(client: any, userId: string, date: Date): Promise<number>
   const readings: GarminReading[] = []
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hrData = await (client as any).getHeartRate(date)
+    const hrData = await client.getHeartRate(date)
     if (hrData?.heartRateValues) {
       for (const [ts, hr] of hrData.heartRateValues) {
         if (hr != null) readings.push({ timestamp: new Date(ts), heartRate: hr })
@@ -76,8 +77,9 @@ async function syncDay(client: any, userId: string, date: Date): Promise<number>
   } catch { /* skip */ }
 
   try {
+    // getStressData not in garmin-connect types — use raw client.get()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stressData = await (client as any).getStressData(dateStr)
+    const stressData = await client.get(`${GC_API}/wellness-service/wellness/dailyStress/${dateStr}`) as any
     if (stressData?.stressValuesArray) {
       for (const [ts, stress] of stressData.stressValuesArray) {
         if (stress != null && stress >= 0) readings.push({ timestamp: new Date(ts), stressScore: stress })
@@ -86,8 +88,9 @@ async function syncDay(client: any, userId: string, date: Date): Promise<number>
   } catch { /* skip */ }
 
   try {
+    // getBodyBattery not in garmin-connect types — use raw client.get()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const bbData = await (client as any).getBodyBattery(dateStr)
+    const bbData = await client.get(`${GC_API}/wellness-service/wellness/bodyBattery/events`, { params: { startDate: dateStr, endDate: dateStr } }) as any
     if (bbData?.[0]?.bodyBatteryValuesArray) {
       for (const [ts, bb] of bbData[0].bodyBatteryValuesArray) {
         if (bb != null) readings.push({ timestamp: new Date(ts), bodyBattery: bb })
@@ -125,7 +128,12 @@ export async function pullGarminData(userId: string, scope: 'full' | 'incrementa
 
   const { GarminConnect } = await import('garmin-connect')
   const client = new GarminConnect({ username: creds.username, password: creds.password })
-  await client.login(creds.username, creds.password)
+  try {
+    await client.login(creds.username, creds.password)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new Error(`Garmin login failed: ${msg} — visit connect.garmin.com to clear any MFA prompt, then retry`)
+  }
 
   const now = new Date()
   let total = 0

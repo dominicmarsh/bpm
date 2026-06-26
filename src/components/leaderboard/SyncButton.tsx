@@ -35,8 +35,11 @@ export function SyncButton() {
       return
     }
 
-    // Surface any partial errors without blocking reload
-    if (body?.error) setErrorMsg(body.error)
+    if (body?.garminError) {
+      setErrorMsg(`Garmin: ${body.garminError}`)
+      setState('error')
+      return
+    }
 
     window.location.reload()
   }
@@ -52,9 +55,12 @@ export function SyncButton() {
 
   if (state === 'error') {
     return (
-      <button onClick={() => { setState('idle'); setErrorMsg('') }} title={errorMsg} className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">
-        Error — retry {errorMsg && '(hover)'}
-      </button>
+      <div className="flex flex-col items-end gap-1">
+        <button onClick={() => { setState('idle'); setErrorMsg('') }} className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">
+          Error — click to retry
+        </button>
+        {errorMsg && <p className="text-xs text-red-400/80 max-w-xs text-right">{errorMsg}</p>}
+      </div>
     )
   }
 
